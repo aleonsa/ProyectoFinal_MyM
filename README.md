@@ -1,2 +1,4 @@
-# ProyectoFinal_MyM
-Proyecto final de la materia de Microprocesadores y Microcontroladores donde se implementa un sistema de control Two Wheeled Inverted Pendulum (TWIP) usando controlador PID
+#Final Project: Two Wheeled Inverted Pendulum (TWIP) with PID Controller
+
+This final project was developed as part of the Microprocessors and Microcontrollers course and consists of a control system for a Two Wheeled Inverted Pendulum (TWIP) using a PID controller with the Tiva C TM4C129ENCpdt microcontroller.
+
