@@ -18,19 +18,20 @@ float Kd = 0.05;                     //D Gain; Mine was 9
 
 char buffer[10];
 
-float Auto_Setpoint, Setpoint, Temp_Error;
+float Setpoint = -3;
+float Temp_Error;
 float PID_Value, PID_I;
 float Last_D_Error;
 
 //int i = 0;
 int pulsos1 = 0;
-int pulsos2 = 0;
+//int pulsos2 = 0;
 int grados1 = 0;
-int grados2 = 0;
-int Forward1 = 0;
-int Backward1 = 0;
-int Forward2 = 0;
-int Backward2 = 0;
+//int grados2 = 0;
+//int Forward1 = 0;
+//int Backward1 = 0;
+//int Forward2 = 0;
+//int Backward2 = 0;
 
 void Encoder1(void){
     switch(GPIO_PORTL_DATA_R ){
@@ -45,35 +46,35 @@ void Encoder1(void){
 
     }
     grados1 = pulsos1*4;
-    if (grados1 < 0){
-                grados1 = 360 + grados1;
-            }
-    if (grados1 == 360){
-        grados1 = 0;
-        pulsos1 = 0;
-    }
-    if(pulsos1 == -90){
-        pulsos1 = 0;
-        grados1 = 0;
-    }
+//    if (grados1 < 0){
+//                grados1 = 360 + grados1;
+//            }
+//    if (grados1 == 360){
+//        grados1 = 0;
+//        pulsos1 = 0;
+//    }
+//    if(pulsos1 == -90){
+//        pulsos1 = 0;
+//        grados1 = 0;
+//    }
 
     GPIO_PORTL_ICR_R = 0X03; //Se limpia la bandera de interrupción
 }
-void Encoder2(void){
-    switch(GPIO_PORTM_DATA_R ){
-        case 0x10:
-            pulsos2++;
-            break;
-        case 0x20:
-            pulsos2--;
-            break;
-        default:
-            break;
-    }
-
-
-    GPIO_PORTM_ICR_R = 0X30; //Se limpia la bandera de interrupción
-}
+//void Encoder2(void){
+//    switch(GPIO_PORTM_DATA_R ){
+//        case 0x10:
+//            pulsos2++;
+//            break;
+//        case 0x20:
+//            pulsos2--;
+//            break;
+//        default:
+//            break;
+//    }
+//
+//
+//    GPIO_PORTM_ICR_R = 0X30; //Se limpia la bandera de interrupción
+//}
 
  int main(void) {
     HC05_init(); // Init BT module HC05
@@ -126,13 +127,13 @@ void Encoder2(void){
     GPIO_PORTL_ICR_R = 0x03; // Se limpia la bandera de interrupción del PL
     GPIO_PORTL_IM_R |= 0x03; //Se desenmascara la interrupción del PL
     NVIC_EN1_R= 0X200000; //Se habilita la interrupción del puerto L
-    //****Habilitamos las interrupción para el Puerto M para el flanco de subida*****///
-    GPIO_PORTM_IS_R &= ~0x30; // Por flanco para PL0,PL1,PL2 y PL3
-    GPIO_PORTM_IBE_R = 0x00; // NO es ambos flancos para PL
-    GPIO_PORTM_IEV_R |= 0x30; // Flanco de subida para PL0,1,2,3
-    GPIO_PORTM_ICR_R = 0x30; // Se limpia la bandera de interrupción del PL
-    GPIO_PORTM_IM_R |= 0x30; //Se desenmascara la interrupción del PL
-    NVIC_EN2_R= 0X100; //Se habilita la interrupción del puerto L
+//    //****Habilitamos las interrupción para el Puerto M para el flanco de subida*****///
+//    GPIO_PORTM_IS_R &= ~0x30; // Por flanco para PL0,PL1,PL2 y PL3
+//    GPIO_PORTM_IBE_R = 0x00; // NO es ambos flancos para PL
+//    GPIO_PORTM_IEV_R |= 0x30; // Flanco de subida para PL0,1,2,3
+//    GPIO_PORTM_ICR_R = 0x30; // Se limpia la bandera de interrupción del PL
+//    GPIO_PORTM_IM_R |= 0x30; //Se desenmascara la interrupción del PL
+//    NVIC_EN2_R= 0X100; //Se habilita la interrupción del puerto L
 
     I2C_Init();     //Inicializa I2C0
     while(I2C0_MCS_R&0x00000001){}; // espera que el I2C esté listo
@@ -154,12 +155,24 @@ void Encoder2(void){
 
         dist = (1100 * 30) / (readPE3);
 
+        // Enviamos el dato distancia por BT
         ftoa(dist,buffer);
         buffer[8] = 92; // "\"
-        buffer[9] = 110; // "n"
-
+        buffer[9] = 100; // "d"
         Bluetooth_Write_String(buffer);
-        Delay(10);
+        // Enviamos el dato posicion de motores por BT
+        ftoa(grados1,buffer);
+        buffer[8] = 92; // "\"
+        buffer[9] = 109; // "m"
+        Bluetooth_Write_String(buffer);
+        // Enviamos el dato inclinacion por BT
+        ftoa(ang_y,buffer);
+        buffer[8] = 92; // "\"
+        buffer[9] = 105; // "i"
+        Bluetooth_Write_String(buffer);
+
+
+//        Delay(1);
 
         ReadMPU6060();
         dt = (float)((mili - tiempo_prev)/1000.00);
@@ -176,10 +189,10 @@ void Encoder2(void){
         ang_x_prev=ang_x;
         ang_y_prev=ang_y;
 
-        /*******************PID CONTROL*******************/
-        Temp_Error = ang_y - Auto_Setpoint - Setpoint;
+        /***********************************************PID CONTROL****************************************/
+        Temp_Error = ang_y - Setpoint;
         if (PID_Value > 5 || PID_Value < -5) {
-          Temp_Error += PID_Value * 0.015 ;
+          Temp_Error += PID_Value * 0.010 ;
         }
 
         //I value
@@ -194,8 +207,7 @@ void Encoder2(void){
 
         Last_D_Error = Temp_Error;
 
-        if (PID_Value < 10 && PID_Value > - 10)PID_Value = 0;
-
+        if (PID_Value < 7 && PID_Value > - 7)PID_Value = 0;
 
         if(PID_Value < 0){
             GPIO_PORTD_AHB_DATA_R = 1;
@@ -206,10 +218,9 @@ void Encoder2(void){
             setDC((int)abs(PID_Value));
         }
 
-        if (ang_y > 40 || ang_y < -40 || direccion == 0) {                        //If the robot falls or the "direccion" is 0
+        if (ang_y > 30 || ang_y < -30 || direccion == 0) {                        //If the robot falls or the "direccion" is 0
           PID_Value = 0;                                                          //Set the PID output to 0 so the motors are stopped
           PID_I = 0;                                                              //Reset the I-controller memory                                                          //Set the Activated variable to 0
-          Auto_Setpoint = 0; //Reset the Auto_Setpoint variable
           setDC(0);
           direccion = 0;
           GPIO_PORTD_AHB_DATA_R = 0;

@@ -42,7 +42,7 @@ static void IntDefaultHandler(void);
 //*****************************************************************************
 extern void _c_int00(void);
 extern void Encoder1(void);
-extern void Encoder2(void);
+//extern void Encoder2(void);
 
 //*****************************************************************************
 //
@@ -157,7 +157,8 @@ void (* const g_pfnVectors[])(void) =
     0,                                      // Reserved
     IntDefaultHandler,                      // I2C4 Master and Slave
     IntDefaultHandler,                      // I2C5 Master and Slave
-    Encoder2,                               // GPIO Port M
+    IntDefaultHandler,                      // GPIO Port M
+//  Encoder2,                               // GPIO Port M
     IntDefaultHandler,                      // GPIO Port N
     0,                                      // Reserved
     IntDefaultHandler,                      // Tamper
